@@ -1,0 +1,21 @@
+.list-area>thead>tr{
+    text-align: center;
+    border: 1px solid black;
+}
+.list-area>tbody>tr{
+    text-align: center;
+    border: 1px solid black;
+}
+.list-area{
+    margin-left: 250px;
+}
+#pagingArea{
+    margin-top: 10px;
+}
+#pagingArea a{
+    color: black;
+}
+.outer{
+    width: 1200px;
+    margin: auto;
+}

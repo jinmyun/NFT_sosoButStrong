@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="orderMapper">
+	 
+	<resultMap id="cartResultSet" type="cart" >
+		<result column="USER_NO" property="seller"/>
+		<result column="PRODUCT_NAME" property="productName"/>
+		<result column="OPTION" property="option"/>
+		<result column="PRICE" property="price"/>
+		<result column="QUANTITY" property="quantity"/>
+		<result column="SELLER_NAME" property="sellerName"/>
+		<result column="SELLER_IMAGEPATH" property="sellerImage"/>	
+		<result column="CHANGE_NAME" property="changeName"/>
+
+	</resultMap>
+	
+	<resultMap id="orderResultSet" type="order">
+		<result column="ORDER_ITEM" property="orderItem"/>
+		<result column="ORDER_PRICE" property="orderPrice"/>
+		<result column="USE_POINT" property="usePoint"/>
+		<result column="PAY_METHOD" property="payMethod"/>
+		<result column="DELIVERY_NAME" property="deliveryName"/>
+		<result column="DELIVERY_ADDRESS" property="deliveryAddress"/>
+		<result column="DELIVERY_PHONE" property="deilveryPhone"/>
+		<result column="DELIVERY_MESSAGE" property="deliveryMessage"/>
+		<result column="ORDER_DATE" property="orderDate"/>
+		<result column="STATUS" property="status"/>
+		<result column="QUANTITY" property="quantity"/>
+		<result column="SELLER" property="seller"/>
+		<result column="SELLER_NAME" property="sellerName"/>
+		<result column="ORDER_NO" property="orderNo"/>	
+		<result column="DELIVERY_NO" property="deliveryNo"/>
+		<result column="SELLER_IMAGEPATH" property="sellerImage"/>
+		<result column="SELLER_COUNT" property="sellerCount"/>	
+		<result column="ORDERER" property="orderer"/>   
+      	<result column="PRODUCT_NAME" property="productName"/>
+		<result column="PRODUCT_NO" property="productNo"/>
+	</resultMap>
+
+	<select id="selectCart" parameterType="_int" resultMap="cartResultSet">
+		SELECT 
+				C.PRODUCT_NAME, 
+				C."OPTION",
+				C.PRICE, 
+				C.QUANTITY, 
+				S.SELLER_NAME, 
+				S.SELLER_IMAGEPATH, 
+				S.USER_NO,
+				A.CHANGE_NAME				
+
+		FROM CART C
+		JOIN PRODUCT P ON (C.PRODUCT_NO = P.PRODUCT_NO)
+		JOIN ATTACHMENT A ON (P.PRODUCT_NO = A.PRODUCT_NO)
+		JOIN SELLER S ON (P.UPLOADER = S.USER_NO)		
+		WHERE C.USER_NO = #{userNo}
+	</select>	
+	
+	<update id="deleteCart" parameterType="_int">
+		DELETE "CART"
+		WHERE USER_NO = #{userNo}	
+	</update>
+	
+	<insert id="insertOrderNo" parameterType="string">
+		INSERT INTO "ORDER_NO"(
+						ORDER_NO
+						)
+		VALUES
+				(
+						#{orderNo}								
+				)	
+	</insert>	
+	
+	
+	<insert id="insertOrder" parameterType="java.util.Map">
+		INSERT INTO "ORDER"(
+						ORDER_NO,
+						ORDER_ITEM,
+						ORDER_PRICE,
+						USE_POINT,
+						PAY_METHOD,
+						DELIVERY_NAME,
+						DELIVERY_ADDRESS,
+						DELIVERY_PHONE,
+						DELIVERY_MESSAGE,
+						QUANTITY,
+						ORDERER,
+						SELLER,
+						SELLER_NAME,
+						PRODUCT_NAME
+						)
+		VALUES
+		
+			(			
+						#{orderNo},
+						#{orderItem},
+						#{orderPrice},
+						#{usePoint},
+						#{payMethod},
+						#{deliveryName},
+						#{deliveryAddress},
+						#{deilveryPhone},
+						#{deliveryMessage},
+						#{quantity},
+						#{orderer},
+						#{seller},
+						#{sellerName},
+						#{productName}
+			)
+
+	</insert>
+	
+	<select id="selectOrderNo" resultType="string">
+		SELECT ORDER_NO
+		FROM "ORDER"
+		WHERE ORDERER = #{userNo}
+		 AND ORDER_DATE = (
+		 					SELECT MAX(ORDER_DATE)
+		 					FROM "ORDER"
+		 					WHERE ORDERER = #{userNo}
+		 					)
+		 AND ROWNUM = 1
+	</select>
+	
+	<select id="selectOrderDetail" resultMap="orderResultSet">
+		SELECT A.*, SELLER_IMAGEPATH, PRODUCT_NO
+		FROM (SELECT *
+		        FROM "ORDER"
+		        WHERE ORDER_NO = #{orderNo}
+		       ) A	
+		JOIN SELLER ON(SELLER = USER_NO)
+		JOIN PRODUCT ON(SELLER = UPLOADER)
+	</select>
+	
+	<select id="selectOrderList" parameterType="_int" resultMap="orderResultSet">
+		SELECT B.*, V.ORDER_PRICE, V.SELLER_NAME SELLER_COUNT, QUANTITY
+		FROM (      
+		        SELECT *
+		        FROM (
+		               SELECT A.*, ROW_NUMBER() OVER (PARTITION BY ORDER_NO ORDER BY STATUS DESC) RNUM
+		                FROM (
+		                        SELECT O.ORDER_NO, O.ORDER_ITEM, O.ORDER_DATE, O.STATUS, O.SELLER_NAME, S.SELLER_IMAGEPATH
+		                        FROM "ORDER" O
+		                        JOIN SELLER S ON (O.SELLER = S.USER_NO)
+		                        WHERE ORDERER = #{userNo}
+		                        ORDER BY DECODE(O.STATUS, '상품준비중', 1, '배송중', 2, '배송완료', 3, '결제완료', 4, '결제취소', 5)
+		                      ) A
+		                )
+		        WHERE RNUM = 1        
+		    )B
+		JOIN VW_ORDER_LIST V ON (V.ORDER_NO = B.ORDER_NO)
+		ORDER BY B.ORDER_DATE DESC		
+	</select>
+	
+	<select id="selectOrderListCount" parameterType="_int" resultType="_int">
+		SELECT COUNT(*)
+		FROM (
+		        SELECT COUNT(*)
+				FROM "ORDER"
+				WHERE ORDERER = #{userNo}
+				GROUP BY ORDER_NO
+		    )
+	</select>
+	
+	<select id="selectOrderCancel" parameterType="order" resultMap="orderResultSet">
+		SELECT B.*, V.ORDER_PRICE, V.SELLER_NAME SELLER_COUNT, V.QUANTITY
+		FROM (      
+		        SELECT *
+		        FROM (
+		               SELECT A.*, ROW_NUMBER() OVER (PARTITION BY ORDER_NO ORDER BY STATUS DESC) RNUM
+		                FROM (
+		                        SELECT O.ORDER_NO, O.ORDER_ITEM, O.ORDER_DATE, O.STATUS, O.SELLER_NAME, O.PAY_METHOD, O.USE_POINT, S.SELLER_IMAGEPATH
+		                        FROM "ORDER" O
+		                        JOIN SELLER S ON (O.SELLER = S.USER_NO)
+		                        WHERE ORDERER = #{orderer}
+		                        ORDER BY DECODE(O.STATUS, '상품준비중', 1, '배송중', 2, '배송완료', 3, '결제완료', 4, '결제취소', 5)
+		                      ) A
+		                )
+		        WHERE RNUM = 1 
+		            AND ORDER_NO = #{orderNo}
+		    )B
+		JOIN VW_ORDER_LIST V ON (V.ORDER_NO = B.ORDER_NO)			
+	</select>
+	
+	<!--2022.3.28(월) 10h30 '결제 취소 일자' 컬럼 값 추가_은영-->
+	<update id="orderCancel" parameterType="order">
+		UPDATE "ORDER"
+		SET STATUS = '결제취소'
+			, ORDER_CANCEL_DATE = SYSDATE
+		WHERE ORDER_NO = #{orderNo}
+	</update>
+	
+	<select id="selectSearchCount" parameterType="hashmap" resultType="_int">
+		SELECT COUNT(*)
+		FROM (      
+		        SELECT *
+		        FROM (
+		               SELECT A.*, ROW_NUMBER() OVER (PARTITION BY ORDER_NO ORDER BY STATUS DESC) RNUM
+		                FROM (
+		                        SELECT O.ORDER_NO, O.ORDER_ITEM, O.ORDER_DATE, O.STATUS, O.SELLER_NAME, O.PAY_METHOD, S.SELLER_IMAGEPATH
+		                        FROM "ORDER" O
+		                        JOIN SELLER S ON (O.SELLER = S.USER_NO)
+		                        WHERE ORDERER = #{userNo}
+		                        <if test="keyword != null">
+		                            AND O.SELLER_NAME LIKE '%' || #{keyword} || '%' 
+		                        </if>
+		                        <if test="year != null">
+		                        	AND EXTRACT(YEAR FROM O.ORDER_DATE ) = #{year}
+		                        </if>
+		                        <if test="month != null">
+		                        	AND O.ORDER_DATE >= ADD_MONTHS(SYSDATE, #{month})
+		                        </if>
+		                        ORDER BY DECODE(O.STATUS, '상품준비중', 1, '배송중', 2, '배송완료', 3, '결제완료', 4, '결제취소', 5)
+		                      ) A
+		                )
+		        WHERE RNUM = 1             
+		    )B
+		JOIN VW_ORDER_LIST V ON (V.ORDER_NO = B.ORDER_NO)	
+	</select>
+	
+	<select id="selectSearchList" parameterType="hashmap" resultMap="orderResultSet">
+		SELECT B.*, V.ORDER_PRICE, V.SELLER_NAME SELLER_COUNT, V.QUANTITY
+		FROM (      
+		        SELECT *
+		        FROM (
+		               SELECT A.*, ROW_NUMBER() OVER (PARTITION BY ORDER_NO ORDER BY STATUS DESC) RNUM
+		                FROM (
+		                        SELECT O.ORDER_NO, O.ORDER_ITEM, O.ORDER_DATE, O.STATUS, O.SELLER_NAME, O.PAY_METHOD, S.SELLER_IMAGEPATH
+		                        FROM "ORDER" O
+		                        JOIN SELLER S ON (O.SELLER = S.USER_NO)
+		                        WHERE ORDERER = #{userNo}
+		                        <if test="keyword != null">
+		                            AND O.SELLER_NAME LIKE '%' || #{keyword} || '%' 
+		                        </if>
+		                        <if test="year != null">
+		                        	AND EXTRACT(YEAR FROM O.ORDER_DATE ) = #{year}
+		                        </if>
+		                         <if test="month != null">
+		                        	AND O.ORDER_DATE >= ADD_MONTHS(SYSDATE, #{month})
+		                        </if>
+		                        ORDER BY DECODE(O.STATUS, '상품준비중', 1, '배송중', 2, '배송완료', 3, '결제완료', 4, '결제취소', 5)
+		                      ) A
+		                )
+		        WHERE RNUM = 1             
+		    )B
+		JOIN VW_ORDER_LIST V ON (V.ORDER_NO = B.ORDER_NO)
+		ORDER BY B.ORDER_DATE DESC			
+	</select>
+	
+	<select id="orderManageListCount" parameterType="_int" resultType="_int">
+		SELECT COUNT(*)
+		FROM "ORDER"
+		WHERE SELLER = #{userNo}	
+	</select>
+	
+	<select id="orderManageList" parameterType="_int" resultMap="orderResultSet">
+		SELECT ORDER_DATE, ORDER_NO, ORDER_ITEM, ORDER_PRICE, QUANTITY, M.USER_ID ORDERER, O.STATUS, DELIVERY_NO, O.PRODUCT_NAME
+		FROM "ORDER" O
+		JOIN MEMBER M ON (ORDERER = USER_NO)
+		WHERE SELLER = #{userNo}
+		ORDER BY ORDER_DATE DESC
+	</select>	
+	
+	<select id="searchOrderManageCount" parameterType="hashmap" resultType="_int">
+		SELECT COUNT(*)
+		FROM "ORDER" O
+		JOIN MEMBER M ON (ORDERER = USER_NO)
+		WHERE SELLER = #{userNo}
+		<if test="keyword != null and keyword != ''">
+			AND M.USER_ID LIKE '%' || #{keyword} || '%' 
+		</if>
+		<if test="year != null and year != ''">
+		   	AND EXTRACT(YEAR FROM ORDER_DATE ) = #{year}
+		</if>
+		<if test="month != null and month != ''">
+		    AND ORDER_DATE >= ADD_MONTHS(SYSDATE, #{month})
+		</if>	
+		<if test="status != null and status != ''">
+			AND O.STATUS = #{status}
+		</if>	
+	</select>
+	
+	<select id="searchOrderManageList" parameterType="hashmap" resultMap="orderResultSet">
+		SELECT ORDER_DATE, ORDER_NO, ORDER_ITEM, ORDER_PRICE, QUANTITY, M.USER_ID ORDERER, O.STATUS, DELIVERY_NO, O.PRODUCT_NAME
+		FROM "ORDER" O
+		JOIN MEMBER M ON (ORDERER = USER_NO)
+		WHERE SELLER = #{userNo}
+		<if test="keyword != null and keyword != ''">
+			AND M.USER_ID LIKE '%' || #{keyword} || '%' 
+		</if>
+		<if test="year != null and year != ''">
+		   	AND EXTRACT(YEAR FROM O.ORDER_DATE ) = #{year}
+		</if>
+		<if test="month != null and month != ''">
+		    AND O.ORDER_DATE >= ADD_MONTHS(SYSDATE, #{month})
+		</if>		
+		<if test="status != null and status != ''">
+			AND O.STATUS = #{status}
+		</if>
+		ORDER BY O.ORDER_DATE DESC
+	</select>
+	
+	<!--2022.3.28(월) 10h30 '배송 완료 일자' 컬럼 값 추가_은영-->
+	<update id="updateStatus" parameterType="order">
+		UPDATE "ORDER"
+		SET STATUS = #{status}
+		<if test="deliveryNo != null and deliveryNo != ''">
+			, DELIVERY_NO = #{deliveryNo}
+		</if>
+
+		<if test="status == '배송완료' and status != '' and status != null ">
+			, DELIVERY_COMPLETE_DATE = SYSDATE
+			, SETTLEMENT_EXPECTED_DATE = DECODE(TO_CHAR(SYSDATE, 'DY'), '일', SYSDATE + 1,
+		                                                            '월', SYSDATE + 1,
+		                                                            '화', SYSDATE + 1,
+		                                                            '수', SYSDATE + 1, 
+		                                                            '목', SYSDATE + 1, 
+		                                                            '금', SYSDATE + 3, 
+		                                                            '토', SYSDATE + 2)
+		</if>
+		WHERE SELLER = #{seller}
+			AND ORDER_NO = #{orderNo}			
+	</update>
+	
+	<select id="selectOrderManageDtail" parameterType="order" resultMap="orderResultSet">
+		SELECT A.*, SELLER_IMAGEPATH
+		FROM (SELECT *
+		        FROM "ORDER"
+		        WHERE ORDER_NO = #{orderNo}
+                    AND SELLER = #{seller}    
+            	) A	
+		JOIN SELLER ON(SELLER = USER_NO)
+	</select>
+	
+	<update id="updatePoint" parameterType="_int">
+		UPDATE "MEMBER"
+		SET POINT = POINT - #{point}
+		WHERE USER_NO = #{userNo}
+	</update>
+	
+	<update id="cancelUserPoint" parameterType="order">
+		UPDATE "MEMBER"
+		SET POINT = POINT + #{usePoint}
+		WHERE USER_NO = #{orderer}
+	</update>
+ 
+ 
+</mapper>

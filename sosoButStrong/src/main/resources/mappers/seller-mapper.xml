@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="sellerMapper">
+
+	<resultMap id="productResultSet" type="product">
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="UPLOADER" property="uploader" />
+		<result column="SELL_STATUS" property="sellStatus" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="PRICE" property="price" />
+		<result column="DESCRIPTION" property="description" />
+		<result column="OPTION" property="option" />
+		<result column="P_TAG" property="pTag" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="MODIFY_DATE" property="modifyDate" />
+		<result column="CHANGE_NAME" property="changeName" />
+	</resultMap>
+	
+	<select id="selectProductCount" parameterType="_int" resultType="_int">
+		SELECT
+				COUNT(*)
+		  FROM
+		  		"PRODUCT"
+		 WHERE
+		 		STATUS = 'Y'
+		   AND
+		   		UPLOADER = #{uploader}
+	</select>
+
+	<select id="selectProduct" parameterType="_int" resultMap="productResultSet">
+		SELECT
+				PRODUCT_NO,
+				UPLOADER,
+				SELL_STATUS,
+				PRODUCT_NAME,
+				PRICE,
+				"DESCRIPTION",
+				"OPTION",
+				"P_TAG",
+				TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') as "CREATE_DATE",
+				TO_CHAR(MODIFY_DATE, 'YYYY-MM-DD HH24:MI:SS') as "MODIFY_DATE",
+				CHANGE_NAME
+		  FROM
+				"PRODUCT"
+     LEFT JOIN ATTACHMENT USING (PRODUCT_NO)
+		 WHERE
+				STATUS = 'Y'
+		   AND
+		   		UPLOADER = #{uploader}
+      ORDER BY
+                PRODUCT_NO DESC
+	</select>
+
+	<insert id="uploadProduct" parameterType="product">
+		INSERT INTO PRODUCT(
+						PRODUCT_NO,
+						UPLOADER,
+						SELL_STATUS,
+						PRODUCT_NAME,
+						PRICE,
+						"DESCRIPTION",
+						"OPTION",
+						P_TAG
+						)
+		VALUES
+			(			
+						SEQ_PNO.NEXTVAL,
+						#{uploader},
+						#{sellStatus},
+						#{productName},
+						#{price},
+						#{description},
+						#{option},
+						#{pTag}
+			)			
+	</insert>
+ 
+ 	<insert id="uploadAttachment" parameterType="attachment">
+		INSERT INTO ATTACHMENT(
+						FILE_NO,
+						ORIGIN_NAME,
+						CHANGE_NAME,
+						PRODUCT_NO
+						)
+		VALUES
+			(			
+						SEQ_ATNO.NEXTVAL,
+						#{originName},
+						#{changeName},
+						SEQ_PNO.CURRVAL
+			)			
+	</insert>
+	
+	<update id="deleteProduct" parameterType="_int">
+		UPDATE 
+		        PRODUCT 
+		   SET
+		        STATUS = 'N'
+		 WHERE
+		        PRODUCT_NO = #{pno}
+	</update>
+	
+	<update id="updateProduct" parameterType="product">
+		UPDATE 
+		        PRODUCT 
+		   SET
+		        SELL_STATUS = #{sellStatus}
+			   ,PRODUCT_NAME = #{productName}
+		       ,PRICE = #{price}
+		       ,"DESCRIPTION" = #{description}
+		       ,"OPTION" = #{option}
+		       ,P_TAG = #{pTag}
+		       ,MODIFY_DATE = SYSDATE
+		 WHERE
+		        PRODUCT_NO = #{productNo}
+	</update>
+	
+	<update id="updateAttachment" parameterType="attachment">
+		UPDATE 
+		        ATTACHMENT 
+		   SET
+		        ORIGIN_NAME = #{originName}
+			   ,CHANGE_NAME = #{changeName}
+		       ,UPLOAD_DATE = SYSDATE
+		 WHERE
+		        PRODUCT_NO = #{productNo}
+	</update>
+	
+</mapper>

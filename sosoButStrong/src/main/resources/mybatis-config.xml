@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration 
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-config.dtd" >
+<configuration>
+	
+	<!-- 빈문자열 db로 넘어갈때 null로 대체하겠다는 옵션 -->
+	<settings>
+		<setting name="jdbcTypeForNull" value="NULL"/>
+	</settings>
+	
+	<typeAliases>
+		<typeAlias type="com.sbs.wemasal.order.model.vo.Order" alias="order"/>	
+		
+		<typeAlias type="com.sbs.wemasal.member.model.vo.Member" alias="member"/>
+
+		<typeAlias type="com.sbs.wemasal.cart.model.vo.Cart" alias="cart"/>
+
+		<typeAlias type="com.sbs.wemasal.common.model.vo.Attachment" alias="attachment" />
+		
+		<typeAlias type="com.sbs.wemasal.community.model.vo.Community" alias="community" />
+		
+		<typeAlias type="com.sbs.wemasal.community.model.vo.CoAttachment" alias="coAttachment" />
+
+		<typeAlias type="com.sbs.wemasal.member.model.vo.Seller" alias="seller" />
+		
+		<typeAlias type="com.sbs.wemasal.seller.model.vo.Product" alias="product"/>
+		
+		<typeAlias type="com.sbs.wemasal.customer.model.vo.Customer" alias="customer"/>
+		
+		<typeAlias type="com.sbs.wemasal.member.model.vo.Cert" alias="cert" /><!-- 비밀번호 찾기 인증 -->
+	
+		<typeAlias type="com.sbs.wemasal.question.model.vo.Question" alias="question" />
+		<typeAlias type="com.sbs.wemasal.question.model.vo.Answer" alias="answer" />
+		<typeAlias type="com.sbs.wemasal.seller.model.vo.DailySales" alias="dailysales" />
+		
+		<typeAlias type="com.sbs.wemasal.customer.model.vo.Review" alias="review"/>
+		
+		<typeAlias type="com.sbs.wemasal.community.model.vo.Reply" alias="reply" />
+		
+		<typeAlias type="com.sbs.wemasal.report.model.vo.Report" alias="report" />
+	
+		<typeAlias type="com.sbs.wemasal.like.model.vo.Like" alias="like" />
+		
+		<typeAlias type="com.sbs.wemasal.notice.model.vo.Notice" alias="notice" />
+    
+	</typeAliases>
+	
+	<!--  
+		environment, dataSource 같은 DB연결정보 => root-context.xml에 기술함
+		왜? DB등록정보는 서버 켜지자마자 연동이되어야 하기 때문에
+		서버 켜짐과 동시에 바로 읽혀지는 파일인 root-context.xml에 기술한다 
+	-->	
+	
+	<mappers>
+
+		<mapper resource="/mappers/order-mapper.xml" />	
+		
+		<mapper resource="/mappers/member-mapper.xml"/>
+
+		<mapper resource="/mappers/question-mapper.xml" />	
+		
+		<mapper resource="/mappers/main-mapper.xml" />
+		
+		<mapper resource="/mappers/community-mapper.xml" />
+		
+		<mapper resource="/mappers/question-mapper.xml" />	
+		
+		<mapper resource="/mappers/seller-mapper.xml" />
+		
+		<mapper resource="/mappers/customer-mapper.xml" />	
+		
+		<mapper resource="/mappers/report-mapper.xml" />
+		
+		<mapper resource="/mappers/like-mapper.xml" />
+		
+		<mapper resource="/mappers/settlement-mapper.xml" />
+		
+		<mapper resource="/mappers/notice-mapper.xml" />
+
+	</mappers>
+
+</configuration>
